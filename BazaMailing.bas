@@ -155,7 +155,7 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "<li>Alle displays worden kant-en-klaar geleverd.</li>"
     h = h & "<li>Besteladvies: minimaal 1 zadendisplay (850 zakjes).</li>"
     h = h & "<li>Voor de zadendisplay geldt 100% recht van retour. Overgebleven zaden kunnen in week 22 van 2027 per post worden geretourneerd. Verdere instructies hierover volgen op een later moment.</li>"
-    h = h & "<li>Voor de overige boxen geldt geen recht van retour.</li></ul>"
+    h = h & "</ul>"
 
     ' Afgeronde knop met de persoonlijke formulierlink.
     ' Outlook (Windows) tekent afgeronde hoeken alleen via VML; andere
@@ -163,15 +163,15 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "<table cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin:8px 0 24px 0;""><tr><td>"
     h = h & "<!--[if mso]>"
     h = h & "<v:roundrect xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:w=""urn:schemas-microsoft-com:office:word"" "
-    h = h & "href=""" & link & """ style=""height:46px;v-text-anchor:middle;width:340px;"" arcsize=""50%"" "
+    h = h & "href=""" & link & """ style=""height:58px;v-text-anchor:middle;width:360px;"" arcsize=""50%"" "
     h = h & "strokecolor=""#7AA22F"" fillcolor=""#8DB63C"">"
-    h = h & "<w:anchorlock/><center style=""color:#ffffff;font-family:Calibri,Arial,sans-serif;font-size:13pt;font-weight:bold;"">"
+    h = h & "<w:anchorlock/><center style=""color:#ffffff;font-family:Calibri,Arial,sans-serif;font-size:14pt;font-weight:bold;"">"
     h = h & "Klik hier om in te tekenen</center></v:roundrect>"
     h = h & "<![endif]-->"
     h = h & "<!--[if !mso]><!-->"
     h = h & "<a href=""" & link & """ style=""display:inline-block;background:#8DB63C;color:#ffffff;"
-    h = h & "font-family:Calibri,Arial,sans-serif;font-size:13pt;font-weight:bold;text-decoration:none;"
-    h = h & "padding:12px 32px;border-radius:23px;border:1px solid #7AA22F;"">Klik hier om in te tekenen</a>"
+    h = h & "font-family:Calibri,Arial,sans-serif;font-size:14pt;font-weight:bold;text-decoration:none;"
+    h = h & "padding:17px 40px;border-radius:29px;border:1px solid #7AA22F;"">Klik hier om in te tekenen</a>"
     h = h & "<!--<![endif]-->"
     h = h & "</td></tr></table>"
 
@@ -253,15 +253,16 @@ Private Sub OnthoudMap(ByVal map As String)
     ThisWorkbook.Names.Add Name:="BazaAfbeeldingenMap", RefersTo:="=""" & map & """", Visible:=False
 End Sub
 
-' Vier displays naast elkaar. Per kolom: omschrijving, foto, uitleverweek en inhoud.
+' Vier displays naast elkaar. Per kolom: omschrijving, foto, uitleverweek, inhoud en recht van retour.
 ' De nummers 1 t/m 4 verwijzen naar de afbeeldingen in de volgorde van afb.
 Private Function AanbodTabel() As String
-    Dim namen As Variant, weken As Variant, inhoud As Variant
+    Dim namen As Variant, weken As Variant, inhoud As Variant, retour As Variant
     Dim t As String, i As Long, cel As String
 
     namen = Array("Zadendisplay", "Bloemenweide mix doos", "Hangtuin Aardbeien mix Displaydoos", "Keuken Tuin Tomaten Displaydoos")
     weken = Array("Week 3", "Week 3", "Week 12", "Week 12")
     inhoud = Array("850 zakjes", "30 CE", "30 CE", "30 CE")
+    retour = Array(True, False, False, False)
     cel = "align=""center"" width=""25%"" style=""padding:8px 10px;font-family:Calibri,Arial,sans-serif;font-size:11pt;border-left:1px solid #DDDDDD;border-right:1px solid #DDDDDD;"
 
     t = "<table cellpadding=""0"" cellspacing=""0"" border=""0"" width=""680"" style=""border-collapse:collapse;margin:4px 0 16px 0;"">"
@@ -291,7 +292,15 @@ Private Function AanbodTabel() As String
     ' Inhoud
     t = t & "<tr>"
     For i = 0 To 3
-        t = t & "<td " & cel & "border-top:1px solid #DDDDDD;border-bottom:1px solid #DDDDDD;"">Inhoud:<br><b>" & inhoud(i) & "</b></td>"
+        t = t & "<td " & cel & "border-top:1px solid #DDDDDD;"">Inhoud:<br><b>" & inhoud(i) & "</b></td>"
+    Next i
+    t = t & "</tr>"
+
+    ' Recht van retour: Ja in groen, Nee in rood
+    t = t & "<tr>"
+    For i = 0 To 3
+        t = t & "<td " & cel & "border-top:1px solid #DDDDDD;border-bottom:1px solid #DDDDDD;"">Recht van retour:<br>" & _
+            IIf(retour(i), "<b style=""color:#8DB63C;"">JA</b>", "<b style=""color:#D52B1E;"">NEE</b>") & "</td>"
     Next i
     t = t & "</tr></table>"
 
