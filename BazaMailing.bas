@@ -174,7 +174,7 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "<table cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin:8px 0 24px 0;""><tr><td>"
     h = h & "<!--[if mso]>"
     h = h & "<v:roundrect xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:w=""urn:schemas-microsoft-com:office:word"" "
-    h = h & "href=""" & link & """ style=""height:46px;v-text-anchor:middle;width:260px;"" arcsize=""50%"" "
+    h = h & "href=""" & link & """ style=""height:46px;v-text-anchor:middle;width:340px;"" arcsize=""50%"" "
     h = h & "strokecolor=""#7AA22F"" fillcolor=""#8DB63C"">"
     h = h & "<w:anchorlock/><center style=""color:#ffffff;font-family:Calibri,Arial,sans-serif;font-size:13pt;font-weight:bold;"">"
     h = h & "Klik hier om in te tekenen</center></v:roundrect>"
