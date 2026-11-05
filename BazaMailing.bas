@@ -52,16 +52,9 @@ Public Sub BazaMailingKlaarzetten()
     cC4 = KolomIndex(lo, "Contactpersoon4")
 
     ' Afbeeldingen controleren
-    map = AFBEELDINGEN_MAP
-    If map = "" Then map = ThisWorkbook.Path & Application.PathSeparator & "Afbeeldingen"
-    If Right$(map, 1) <> Application.PathSeparator Then map = map & Application.PathSeparator
     afb = Array("Zadendisplay.jpg", "Bloemenweide.jpg", "Aardbeien.jpg", "Tomaten.jpg")
-    For i = LBound(afb) To UBound(afb)
-        If Dir(map & afb(i)) = "" Then
-            MsgBox "Afbeelding niet gevonden:" & vbCrLf & map & afb(i), vbExclamation
-            Exit Sub
-        End If
-    Next i
+    map = ZoekAfbeeldingenMap(afb)
+    If map = "" Then Exit Sub
 
     ' Log ophalen en lijst met nog te doen winkels maken
     Set logWs = LogBlad()
@@ -165,7 +158,7 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "<li>De Hangtuin Aardbeien Mix Box en de Tomaten Keukentuintjes Box worden uitgeleverd in week 12.</li>"
     h = h & "<li>Alle displays worden kant-en-klaar geleverd.</li></ul><ul>"
     h = h & "<li>Besteladvies: minimaal 1 zadendisplay (850 zakjes).</li>"
-    h = h & "<li>Voor de zadendisplay geldt 100% recht van retour. Overgebleven zaden kunnen in week 22 van 2026 per post worden geretourneerd. Verdere instructies hierover volgen op een later moment.</li>"
+    h = h & "<li>Voor de zadendisplay geldt 100% recht van retour. Overgebleven zaden kunnen in week 22 van 2027 per post worden geretourneerd. Verdere instructies hierover volgen op een later moment.</li>"
     h = h & "<li>Voor de overige boxen geldt geen recht van retour.</li></ul>"
 
     ' Knop met de persoonlijke formulierlink
@@ -187,6 +180,77 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "</body></html>"
     MailTekst = h
 End Function
+
+' Zoekt de map met de afbeeldingen. Volgorde: instelling AFBEELDINGEN_MAP,
+' de eerder gekozen map, de submap "Afbeeldingen" naast de werkmap. Lukt dat
+' niet (bijvoorbeeld omdat de werkmap op OneDrive/SharePoint staat en het pad
+' dan een webadres is), dan mag je zelf de map aanwijzen. Die keuze wordt in de
+' werkmap onthouden.
+Private Function ZoekAfbeeldingenMap(ByVal afb As Variant) As String
+    Dim kandidaten As Collection, k As Variant, gekozen As String
+
+    Set kandidaten = New Collection
+    If AFBEELDINGEN_MAP <> "" Then kandidaten.Add AFBEELDINGEN_MAP
+    gekozen = OnthoudenMap()
+    If gekozen <> "" Then kandidaten.Add gekozen
+    If LCase$(Left$(ThisWorkbook.Path, 4)) <> "http" And ThisWorkbook.Path <> "" Then
+        kandidaten.Add ThisWorkbook.Path & Application.PathSeparator & "Afbeeldingen"
+    End If
+
+    For Each k In kandidaten
+        If AlleAfbeeldingen(MetScheiding(CStr(k)), afb) Then
+            ZoekAfbeeldingenMap = MetScheiding(CStr(k))
+            Exit Function
+        End If
+    Next k
+
+    MsgBox "De map met de afbeeldingen (" & Join(afb, ", ") & ") is niet automatisch gevonden." & vbCrLf & _
+           "Kies in het volgende venster de map waarin de afbeeldingen staan.", vbInformation
+    Do
+        With Application.FileDialog(4)   ' msoFileDialogFolderPicker
+            .Title = "Kies de map met de BAZA-afbeeldingen"
+            If .Show <> -1 Then Exit Function
+            gekozen = MetScheiding(.SelectedItems(1))
+        End With
+        If AlleAfbeeldingen(gekozen, afb) Then
+            OnthoudMap gekozen
+            ZoekAfbeeldingenMap = gekozen
+            Exit Function
+        End If
+        If MsgBox("In deze map staan niet alle afbeeldingen:" & vbCrLf & Join(afb, vbCrLf) & vbCrLf & vbCrLf & _
+                  "Een andere map kiezen?", vbExclamation + vbYesNo) = vbNo Then Exit Function
+    Loop
+End Function
+
+Private Function AlleAfbeeldingen(ByVal map As String, ByVal afb As Variant) As Boolean
+    Dim i As Long, gevonden As String
+    For i = LBound(afb) To UBound(afb)
+        gevonden = ""
+        On Error Resume Next
+        gevonden = Dir(map & afb(i))
+        On Error GoTo 0
+        If gevonden = "" Then Exit Function
+    Next i
+    AlleAfbeeldingen = True
+End Function
+
+Private Function MetScheiding(ByVal map As String) As String
+    If Right$(map, 1) <> Application.PathSeparator Then map = map & Application.PathSeparator
+    MetScheiding = map
+End Function
+
+Private Function OnthoudenMap() As String
+    On Error Resume Next
+    OnthoudenMap = Evaluate(ThisWorkbook.Names("BazaAfbeeldingenMap").RefersTo)
+    On Error GoTo 0
+End Function
+
+Private Sub OnthoudMap(ByVal map As String)
+    On Error Resume Next
+    ThisWorkbook.Names("BazaAfbeeldingenMap").Delete
+    On Error GoTo 0
+    ThisWorkbook.Names.Add Name:="BazaAfbeeldingenMap", RefersTo:="=""" & map & """", Visible:=False
+End Sub
 
 Private Function AfbCel(ByVal nr As Long, ByVal titel As String) As String
     AfbCel = "<td valign=""top"" align=""center"" style=""font-size:10pt;color:#555555;"">" & _
