@@ -8,5 +8,5 @@
 
 1. Laad `Winkeloverzicht.pq` als tabel in een Excel-werkmap (.xlsm).
 2. Zet de map `Afbeeldingen` naast die werkmap.
-3. Alt+F11, Bestand > Bestand importeren, kies `BazaMailing.bas`.
+3. Alt+F11, Invoegen > Module, plak de inhoud van `BazaMailing.bas`.
 4. Start de macro `BazaMailingKlaarzetten` (Alt+F8).

@@ -1,4 +1,3 @@
-Attribute VB_Name = "BazaMailing"
 '==============================================================================
 ' BAZA intekenmailing
 '
@@ -20,8 +19,8 @@ Private Const ONDERWERP As String = "Intekenen BAZA zaden en displaydozen"
 Private Const PER_KEER As Long = 25
 Private Const LOG_BLAD As String = "Verzendlog"
 Private Const CONTACTPERSONEN_IN_CC As Boolean = True   ' False = alle adressen in Aan
-' Map met de afbeeldingen. Leeg = submap "Afbeeldingen" naast deze werkmap.
-Private Const AFBEELDINGEN_MAP As String = ""
+' Map met de afbeeldingen (Zadendisplay.jpg, Bloemenweide.jpg, Aardbeien.jpg, Tomaten.jpg).
+Private Const AFBEELDINGEN_MAP As String = "S:\Roselife\2027\Zadendisplays\Afbeeldingen displays dozen"
 ' -----------------------------------------------------------------------------
 
 Private Const PR_ATTACH_CONTENT_ID As String = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
