@@ -147,11 +147,19 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "<p>Goedendag,</p>"
     h = h & "<p>Ook dit jaar is het weer mogelijk om in te tekenen op het assortiment van BAZA!<br>"
     h = h & "Naast de vertrouwde jaarlijkse zadendisplay kun je dit jaar ook kiezen voor diverse andere displaydozen.</p>"
-    h = h & "<p>Het aanbod bestaat uit:</p><ul>"
-    h = h & "<li>Zadendisplay (850 zakjes)</li>"
-    h = h & "<li>Bloemenweide mix doos (30 CE)</li>"
-    h = h & "<li>Hangtuin Aardbeien mix Displaydoos (30 CE)</li>"
-    h = h & "<li>Keuken Tuin Tomaten Displaydoos (30 CE)</li></ul>"
+    h = h & "<p>Het aanbod bestaat uit:</p>"
+
+    ' Tabel met het aanbod: afbeelding, omschrijving en inhoud
+    h = h & "<table cellpadding=""8"" cellspacing=""0"" border=""0"" style=""border-collapse:collapse;margin:4px 0 16px 0;"">"
+    h = h & "<tr style=""background:#8DB63C;color:#ffffff;"">"
+    h = h & "<th align=""left"" style=""padding:8px 12px;font-family:Calibri,Arial,sans-serif;"">Afbeelding</th>"
+    h = h & "<th align=""left"" style=""padding:8px 12px;font-family:Calibri,Arial,sans-serif;"">Omschrijving</th>"
+    h = h & "<th align=""left"" style=""padding:8px 12px;font-family:Calibri,Arial,sans-serif;"">Inhoud</th></tr>"
+    h = h & AanbodRij(1, "Zadendisplay", "850 zakjes")
+    h = h & AanbodRij(2, "Bloemenweide mix doos", "30 CE")
+    h = h & AanbodRij(3, "Hangtuin Aardbeien mix Displaydoos", "30 CE")
+    h = h & AanbodRij(4, "Keuken Tuin Tomaten Displaydoos", "30 CE")
+    h = h & "</table>"
     h = h & "<p>Voordat je gaat intekenen, is het belangrijk om rekening te houden met de volgende informatie:</p><ul>"
     h = h & "<li>De Zadendisplay en de Bloemenweide doos worden uitgeleverd in week 3.</li>"
     h = h & "<li>De Hangtuin Aardbeien Mix Box en de Tomaten Keukentuintjes Box worden uitgeleverd in week 12.</li>"
@@ -160,18 +168,23 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "<li>Voor de zadendisplay geldt 100% recht van retour. Overgebleven zaden kunnen in week 22 van 2027 per post worden geretourneerd. Verdere instructies hierover volgen op een later moment.</li>"
     h = h & "<li>Voor de overige boxen geldt geen recht van retour.</li></ul>"
 
-    ' Knop met de persoonlijke formulierlink
-    h = h & "<table cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin:16px 0;""><tr>"
-    h = h & "<td bgcolor=""#8DB63C"" style=""padding:10px 22px;border-radius:4px;"">"
-    h = h & "<a href=""" & link & """ style=""color:#ffffff;font-weight:bold;text-decoration:none;font-size:12pt;"">Klik hier om in te tekenen</a>"
+    ' Afgeronde knop met de persoonlijke formulierlink.
+    ' Outlook (Windows) tekent afgeronde hoeken alleen via VML; andere
+    ' mailprogramma's gebruiken de gewone link met border-radius.
+    h = h & "<table cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin:8px 0 24px 0;""><tr><td>"
+    h = h & "<!--[if mso]>"
+    h = h & "<v:roundrect xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:w=""urn:schemas-microsoft-com:office:word"" "
+    h = h & "href=""" & link & """ style=""height:46px;v-text-anchor:middle;width:260px;"" arcsize=""50%"" "
+    h = h & "strokecolor=""#7AA22F"" fillcolor=""#8DB63C"">"
+    h = h & "<w:anchorlock/><center style=""color:#ffffff;font-family:Calibri,Arial,sans-serif;font-size:13pt;font-weight:bold;"">"
+    h = h & "Klik hier om in te tekenen</center></v:roundrect>"
+    h = h & "<![endif]-->"
+    h = h & "<!--[if !mso]><!-->"
+    h = h & "<a href=""" & link & """ style=""display:inline-block;background:#8DB63C;color:#ffffff;"
+    h = h & "font-family:Calibri,Arial,sans-serif;font-size:13pt;font-weight:bold;text-decoration:none;"
+    h = h & "padding:12px 32px;border-radius:23px;border:1px solid #7AA22F;"">Klik hier om in te tekenen</a>"
+    h = h & "<!--<![endif]-->"
     h = h & "</td></tr></table>"
-
-    ' Afbeeldingen 2 x 2
-    h = h & "<table cellpadding=""6"" cellspacing=""0"" border=""0""><tr>"
-    h = h & AfbCel(1, "Zadendisplay") & AfbCel(2, "Bloemenweide mix doos")
-    h = h & "</tr><tr>"
-    h = h & AfbCel(3, "Hangtuin Aardbeien mix") & AfbCel(4, "Keuken Tuin Tomaten")
-    h = h & "</tr></table>"
 
     h = h & "<p>Met vriendelijke groet,</p>"
     h = h & "<p style=""color:#555555;"">Roselife &nbsp;|&nbsp; 2675 LN Honselersdijk &nbsp;|&nbsp; the Netherlands<br>"
@@ -251,10 +264,13 @@ Private Sub OnthoudMap(ByVal map As String)
     ThisWorkbook.Names.Add Name:="BazaAfbeeldingenMap", RefersTo:="=""" & map & """", Visible:=False
 End Sub
 
-Private Function AfbCel(ByVal nr As Long, ByVal titel As String) As String
-    AfbCel = "<td valign=""top"" align=""center"" style=""font-size:10pt;color:#555555;"">" & _
-             "<img src=""cid:baza" & nr & """ width=""300"" alt=""" & titel & """ style=""display:block;""><br>" & _
-             titel & "</td>"
+Private Function AanbodRij(ByVal nr As Long, ByVal omschrijving As String, ByVal inhoud As String) As String
+    Dim td As String
+    td = "style=""padding:8px 12px;border-bottom:1px solid #DDDDDD;font-family:Calibri,Arial,sans-serif;font-size:11pt;"""
+    AanbodRij = "<tr>" & _
+        "<td valign=""middle"" " & td & "><img src=""cid:baza" & nr & """ width=""180"" alt=""" & omschrijving & """ style=""display:block;""></td>" & _
+        "<td valign=""middle"" " & td & "><b>" & omschrijving & "</b></td>" & _
+        "<td valign=""middle"" " & td & ">" & inhoud & "</td></tr>"
 End Function
 
 ' Contactpersoon 2 t/m 4 als ;-gescheiden lijst
