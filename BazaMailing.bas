@@ -149,21 +149,10 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "Naast de vertrouwde jaarlijkse zadendisplay kun je dit jaar ook kiezen voor diverse andere displaydozen.</p>"
     h = h & "<p>Het aanbod bestaat uit:</p>"
 
-    ' Tabel met het aanbod: afbeelding, omschrijving en inhoud
-    h = h & "<table cellpadding=""8"" cellspacing=""0"" border=""0"" style=""border-collapse:collapse;margin:4px 0 16px 0;"">"
-    h = h & "<tr style=""background:#8DB63C;color:#ffffff;"">"
-    h = h & "<th align=""left"" style=""padding:8px 12px;font-family:Calibri,Arial,sans-serif;"">Afbeelding</th>"
-    h = h & "<th align=""left"" style=""padding:8px 12px;font-family:Calibri,Arial,sans-serif;"">Omschrijving</th>"
-    h = h & "<th align=""left"" style=""padding:8px 12px;font-family:Calibri,Arial,sans-serif;"">Inhoud</th></tr>"
-    h = h & AanbodRij(1, "Zadendisplay", "850 zakjes")
-    h = h & AanbodRij(2, "Bloemenweide mix doos", "30 CE")
-    h = h & AanbodRij(3, "Hangtuin Aardbeien mix Displaydoos", "30 CE")
-    h = h & AanbodRij(4, "Keuken Tuin Tomaten Displaydoos", "30 CE")
-    h = h & "</table>"
+    ' Tabel met het aanbod: vier displays naast elkaar
+    h = h & AanbodTabel()
     h = h & "<p>Voordat je gaat intekenen, is het belangrijk om rekening te houden met de volgende informatie:</p><ul>"
-    h = h & "<li>De Zadendisplay en de Bloemenweide doos worden uitgeleverd in week 3.</li>"
-    h = h & "<li>De Hangtuin Aardbeien Mix Box en de Tomaten Keukentuintjes Box worden uitgeleverd in week 12.</li>"
-    h = h & "<li>Alle displays worden kant-en-klaar geleverd.</li></ul><ul>"
+    h = h & "<li>Alle displays worden kant-en-klaar geleverd.</li>"
     h = h & "<li>Besteladvies: minimaal 1 zadendisplay (850 zakjes).</li>"
     h = h & "<li>Voor de zadendisplay geldt 100% recht van retour. Overgebleven zaden kunnen in week 22 van 2027 per post worden geretourneerd. Verdere instructies hierover volgen op een later moment.</li>"
     h = h & "<li>Voor de overige boxen geldt geen recht van retour.</li></ul>"
@@ -264,13 +253,49 @@ Private Sub OnthoudMap(ByVal map As String)
     ThisWorkbook.Names.Add Name:="BazaAfbeeldingenMap", RefersTo:="=""" & map & """", Visible:=False
 End Sub
 
-Private Function AanbodRij(ByVal nr As Long, ByVal omschrijving As String, ByVal inhoud As String) As String
-    Dim td As String
-    td = "style=""padding:8px 12px;border-bottom:1px solid #DDDDDD;font-family:Calibri,Arial,sans-serif;font-size:11pt;"""
-    AanbodRij = "<tr>" & _
-        "<td valign=""middle"" " & td & "><img src=""cid:baza" & nr & """ width=""180"" alt=""" & omschrijving & """ style=""display:block;""></td>" & _
-        "<td valign=""middle"" " & td & "><b>" & omschrijving & "</b></td>" & _
-        "<td valign=""middle"" " & td & ">" & inhoud & "</td></tr>"
+' Vier displays naast elkaar. Per kolom: omschrijving, foto, uitleverweek en inhoud.
+' De nummers 1 t/m 4 verwijzen naar de afbeeldingen in de volgorde van afb.
+Private Function AanbodTabel() As String
+    Dim namen As Variant, weken As Variant, inhoud As Variant
+    Dim t As String, i As Long, cel As String
+
+    namen = Array("Zadendisplay", "Bloemenweide mix doos", "Hangtuin Aardbeien mix Displaydoos", "Keuken Tuin Tomaten Displaydoos")
+    weken = Array("Week 3", "Week 3", "Week 12", "Week 12")
+    inhoud = Array("850 zakjes", "30 CE", "30 CE", "30 CE")
+    cel = "align=""center"" width=""25%"" style=""padding:8px 10px;font-family:Calibri,Arial,sans-serif;font-size:11pt;border-left:1px solid #DDDDDD;border-right:1px solid #DDDDDD;"
+
+    t = "<table cellpadding=""0"" cellspacing=""0"" border=""0"" width=""680"" style=""border-collapse:collapse;margin:4px 0 16px 0;"">"
+
+    ' Omschrijving (groene kopregel)
+    t = t & "<tr>"
+    For i = 0 To 3
+        t = t & "<td " & Replace(cel, "padding:8px 10px;", "padding:10px;background:#8DB63C;color:#ffffff;font-weight:bold;") & _
+            "border-left:1px solid #FFFFFF;"" valign=""middle"" height=""48"">" & namen(i) & "</td>"
+    Next i
+    t = t & "</tr>"
+
+    ' Foto
+    t = t & "<tr>"
+    For i = 0 To 3
+        t = t & "<td " & cel & """ valign=""middle""><img src=""cid:baza" & (i + 1) & """ width=""150"" alt=""" & namen(i) & """ style=""display:block;margin:0 auto;""></td>"
+    Next i
+    t = t & "</tr>"
+
+    ' Uitleverweek
+    t = t & "<tr>"
+    For i = 0 To 3
+        t = t & "<td " & cel & "border-top:1px solid #DDDDDD;"">Uitlevering:<br><b>" & weken(i) & "</b></td>"
+    Next i
+    t = t & "</tr>"
+
+    ' Inhoud
+    t = t & "<tr>"
+    For i = 0 To 3
+        t = t & "<td " & cel & "border-top:1px solid #DDDDDD;border-bottom:1px solid #DDDDDD;"">Inhoud:<br><b>" & inhoud(i) & "</b></td>"
+    Next i
+    t = t & "</tr></table>"
+
+    AanbodTabel = t
 End Function
 
 ' Contactpersoon 2 t/m 4 als ;-gescheiden lijst
