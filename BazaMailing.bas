@@ -15,7 +15,8 @@ Option Explicit
 
 ' ---- Instellingen ------------------------------------------------------------
 Private Const AFZENDER As String = "plus@roselife.nl"
-Private Const ONDERWERP As String = "Intekenen BAZA zaden en displaydozen"
+' Onderwerp; daarachter komt per winkel "(Winkelnummer Winkelnaam SAPnr)"
+Private Const ONDERWERP As String = "2027 Intekenen zadendisplays & Mixdozen"
 Private Const PER_KEER As Long = 25
 Private Const LOG_BLAD As String = "Verzendlog"
 Private Const CONTACTPERSONEN_IN_CC As Boolean = True   ' False = alle adressen in Aan
@@ -30,7 +31,7 @@ Public Sub BazaMailingKlaarzetten()
     Dim lo As Object, ol As Object, account As Object
     Dim logWs As Worksheet, gehad As Object
     Dim map As String, afb As Variant, i As Long
-    Dim cWnk As Long, cNaam As Long, cMail As Long, cC2 As Long, cC3 As Long, cC4 As Long, cLink As Long
+    Dim cWnk As Long, cNaam As Long, cMail As Long, cC2 As Long, cC3 As Long, cC4 As Long, cLink As Long, cSap As Long
     Dim rij As Range, wnk As String, mailAdres As String
     Dim teDoen As Collection, item As Variant
     Dim aantal As Long, totaal As Long, mail As Object
@@ -46,6 +47,7 @@ Public Sub BazaMailingKlaarzetten()
     cNaam = lo.ListColumns("Winkelnaam").Index
     cMail = lo.ListColumns("Emailadres").Index
     cLink = lo.ListColumns("Formulierlink").Index
+    cSap = KolomIndex(lo, "SAPnr")
     cC2 = KolomIndex(lo, "Contactpersoon2")
     cC3 = KolomIndex(lo, "Contactpersoon3")
     cC4 = KolomIndex(lo, "Contactpersoon4")
@@ -108,7 +110,10 @@ Public Sub BazaMailingKlaarzetten()
         Else
             mail.To = Trim$(CStr(rij.Cells(1, cMail).Value)) & IIf(extra = "", "", ";" & extra)
         End If
-        mail.Subject = ONDERWERP
+        Dim sapWaarde As Variant
+        sapWaarde = ""
+        If cSap > 0 Then sapWaarde = rij.Cells(1, cSap).Value
+        mail.Subject = Onderwerpregel(rij.Cells(1, cWnk).Value, rij.Cells(1, cNaam).Value, sapWaarde)
 
         ' Afbeeldingen als verborgen bijlage met Content-ID, zodat ze in de tekst staan
         For i = LBound(afb) To UBound(afb)
@@ -313,6 +318,23 @@ Private Function AanbodTabel() As String
     t = t & "</tr></table>"
 
     AanbodTabel = t
+End Function
+
+' Onderwerp met winkelgegevens, bijvoorbeeld:
+' "2027 Intekenen zadendisplays & Mixdozen (1234 PLUS Jansen 6123)"
+' Het SAPnr komt er alleen bij als het bekend is. Staat het SAPnr al tussen
+' haakjes in de winkelnaam, dan wordt het daar weggehaald zodat het niet dubbel staat.
+Private Function Onderwerpregel(ByVal wnk As Variant, ByVal naam As Variant, ByVal sap As Variant) As String
+    Dim n As String, s As String, deel As String
+    n = Trim$(CStr(naam))
+    s = Trim$(CStr(sap))
+    If s <> "" Then
+        n = Trim$(Replace(n, "(" & s & ")", ""))
+        n = Replace(n, "  ", " ")
+    End If
+    deel = Trim$(CStr(wnk)) & " " & n
+    If s <> "" Then deel = deel & " " & s
+    Onderwerpregel = ONDERWERP & " (" & Trim$(deel) & ")"
 End Function
 
 ' Contactpersoon 2 t/m 4 als ;-gescheiden lijst
