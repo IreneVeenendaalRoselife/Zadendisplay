@@ -18,9 +18,13 @@ Private Const AFZENDER As String = "plus@roselife.nl"
 ' Onderwerp; daarachter komt per winkel " | Winkelnummer/SAPnr Winkelnaam"
 Private Const ONDERWERP As String = "2027 Intekenen Zaden (Displays & Mixdozen)"
 Private Const PER_KEER As Long = 25
-Private Const LOG_BLAD As String = "Verzendlog"
+' Correctiemail: True = de eerste mail is al verstuurd en deze mail vervangt hem
+' (extra inleiding en "Correctie: " voor het onderwerp). Gebruikt een eigen log.
+Private Const CORRECTIE As Boolean = True
+Private Const LOG_BLAD As String = "Verzendlog correctie"   ' eerste ronde: "Verzendlog"
 Private Const CONTACTPERSONEN_IN_CC As Boolean = True   ' False = alle adressen in Aan
-' Map met de afbeeldingen (Zadendisplay.jpg, Bloemenweide.jpg, AardbeienTuin.jpg, TomatenTuin.jpg).
+' Map met de afbeeldingen (Zadendisplay.jpg, Bloemenweide.jpg, AardbeienTuin.jpg, TomatenTuin.jpg)
+' en de knop (KnopFormulier.png).
 Private Const AFBEELDINGEN_MAP As String = "S:\Roselife\2027\Zadendisplays\Afbeeldingen displays dozen"
 ' -----------------------------------------------------------------------------
 
@@ -53,7 +57,7 @@ Public Sub BazaMailingKlaarzetten()
     cC4 = KolomIndex(lo, "Contactpersoon4")
 
     ' Afbeeldingen controleren
-    afb = Array("Zadendisplay.jpg", "Bloemenweide.jpg", "AardbeienTuin.jpg", "TomatenTuin.jpg")
+    afb = Array("Zadendisplay.jpg", "Bloemenweide.jpg", "AardbeienTuin.jpg", "TomatenTuin.jpg", "KnopFormulier.png")
     map = ZoekAfbeeldingenMap(afb)
     If map = "" Then Exit Sub
 
@@ -150,6 +154,11 @@ Private Function MailTekst(ByVal link As String) As String
 
     h = "<html><body style=""font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#222222;"">"
     h = h & "<p>Goedendag,</p>"
+    If CORRECTIE Then
+        h = h & "<p>Onlangs heb je van ons een mail ontvangen over het intekenen op het BAZA-assortiment. "
+        h = h & "Helaas werkte de knop naar het formulier in die mail niet. Onze excuses daarvoor. "
+        h = h & "Hieronder vind je de informatie opnieuw, nu met een werkende link.</p>"
+    End If
     h = h & "<p>Ook dit jaar is het weer mogelijk om in te tekenen op het assortiment van BAZA!<br>"
     h = h & "Naast de vertrouwde jaarlijkse zadendisplay kun je dit jaar ook kiezen voor diverse andere displaydozen.</p>"
     h = h & "<p>Het aanbod bestaat uit:</p>"
@@ -170,23 +179,17 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "dan ontvang je over deze actie geen herinneringen meer."
     h = h & "</td></tr></table>"
 
-    ' Afgeronde knop met de persoonlijke formulierlink.
-    ' Outlook (Windows) tekent afgeronde hoeken alleen via VML; andere
-    ' mailprogramma's gebruiken de gewone link met border-radius.
-    h = h & "<table cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin:8px 0 24px 0;""><tr><td>"
-    h = h & "<!--[if mso]>"
-    h = h & "<v:roundrect xmlns:v=""urn:schemas-microsoft-com:vml"" xmlns:w=""urn:schemas-microsoft-com:office:word"" "
-    h = h & "href=""" & link & """ style=""height:58px;v-text-anchor:middle;width:360px;"" arcsize=""50%"" "
-    h = h & "strokecolor=""#7AA22F"" fillcolor=""#8DB63C"">"
-    h = h & "<w:anchorlock/><center style=""color:#ffffff;font-family:Calibri,Arial,sans-serif;font-size:14pt;font-weight:bold;"">"
-    h = h & "Naar het formulier</center></v:roundrect>"
-    h = h & "<![endif]-->"
-    h = h & "<!--[if !mso]><!-->"
-    h = h & "<a href=""" & link & """ style=""display:inline-block;background:#8DB63C;color:#ffffff;"
-    h = h & "font-family:Calibri,Arial,sans-serif;font-size:14pt;font-weight:bold;text-decoration:none;"
-    h = h & "padding:17px 40px;border-radius:29px;border:1px solid #7AA22F;"">Naar het formulier</a>"
-    h = h & "<!--<![endif]-->"
-    h = h & "</td></tr></table>"
+    ' Knop met de persoonlijke formulierlink. De knop is een afbeelding met een
+    ' gewone link eromheen: dat werkt in Outlook en in alle andere mailprogramma's.
+    h = h & "<table cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin:12px 0 8px 0;""><tr><td>"
+    h = h & "<a href=""" & link & """ target=""_blank"">"
+    h = h & "<img src=""cid:baza5"" width=""360"" height=""58"" border=""0"" alt=""Naar het formulier"" style=""display:block;border:0;"">"
+    h = h & "</a></td></tr></table>"
+
+    ' Dezelfde link voluit, voor als de knop niet werkt
+    h = h & "<p style=""font-size:10pt;color:#555555;margin:0 0 24px 0;"">Werkt de knop niet? "
+    h = h & "Klik dan op deze link of kopieer hem naar je browser:<br>"
+    h = h & "<a href=""" & link & """ target=""_blank"" style=""color:#5A8A1F;word-break:break-all;"">" & link & "</a></p>"
 
     h = h & "<p>Met vriendelijke groet,</p>"
     h = h & "<p style=""color:#555555;"">Roselife &nbsp;|&nbsp; 2675 LN Honselersdijk &nbsp;|&nbsp; the Netherlands<br>"
@@ -334,7 +337,7 @@ Private Function Onderwerpregel(ByVal wnk As Variant, ByVal naam As Variant, ByV
     End If
     deel = Trim$(CStr(wnk))
     If s <> "" Then deel = deel & "/" & s
-    Onderwerpregel = ONDERWERP & " | " & Trim$(deel & " " & n)
+    Onderwerpregel = IIf(CORRECTIE, "Correctie: ", "") & ONDERWERP & " | " & Trim$(deel & " " & n)
 End Function
 
 ' Contactpersoon 2 t/m 4 als ;-gescheiden lijst
