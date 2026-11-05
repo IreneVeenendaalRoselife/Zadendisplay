@@ -15,8 +15,8 @@ Option Explicit
 
 ' ---- Instellingen ------------------------------------------------------------
 Private Const AFZENDER As String = "plus@roselife.nl"
-' Onderwerp; daarachter komt per winkel "(Winkelnummer Winkelnaam SAPnr)"
-Private Const ONDERWERP As String = "2027 Intekenen zadendisplays & Mixdozen"
+' Onderwerp; daarachter komt per winkel " | Winkelnummer/SAPnr Winkelnaam"
+Private Const ONDERWERP As String = "2027 Intekenen Zaden (Displays & Mixdozen)"
 Private Const PER_KEER As Long = 25
 Private Const LOG_BLAD As String = "Verzendlog"
 Private Const CONTACTPERSONEN_IN_CC As Boolean = True   ' False = alle adressen in Aan
@@ -321,7 +321,7 @@ Private Function AanbodTabel() As String
 End Function
 
 ' Onderwerp met winkelgegevens, bijvoorbeeld:
-' "2027 Intekenen zadendisplays & Mixdozen (1234 PLUS Jansen 6123)"
+' "2027 Intekenen Zaden (Displays & Mixdozen) | 1234/6123 PLUS Jansen"
 ' Het SAPnr komt er alleen bij als het bekend is. Staat het SAPnr al tussen
 ' haakjes in de winkelnaam, dan wordt het daar weggehaald zodat het niet dubbel staat.
 Private Function Onderwerpregel(ByVal wnk As Variant, ByVal naam As Variant, ByVal sap As Variant) As String
@@ -332,9 +332,9 @@ Private Function Onderwerpregel(ByVal wnk As Variant, ByVal naam As Variant, ByV
         n = Trim$(Replace(n, "(" & s & ")", ""))
         n = Replace(n, "  ", " ")
     End If
-    deel = Trim$(CStr(wnk)) & " " & n
-    If s <> "" Then deel = deel & " " & s
-    Onderwerpregel = ONDERWERP & " (" & Trim$(deel) & ")"
+    deel = Trim$(CStr(wnk))
+    If s <> "" Then deel = deel & "/" & s
+    Onderwerpregel = ONDERWERP & " | " & Trim$(deel & " " & n)
 End Function
 
 ' Contactpersoon 2 t/m 4 als ;-gescheiden lijst
