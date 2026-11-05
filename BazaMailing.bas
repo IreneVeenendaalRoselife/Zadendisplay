@@ -157,6 +157,14 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "<li>Voor de zadendisplay geldt 100% recht van retour. Overgebleven zaden kunnen in week 22 van 2027 per post worden geretourneerd. Verdere instructies hierover volgen op een later moment.</li>"
     h = h & "</ul>"
 
+    ' Oproep om ook bij geen interesse het formulier in te vullen
+    h = h & "<table cellpadding=""0"" cellspacing=""0"" border=""0"" width=""680"" style=""margin:8px 0 4px 0;""><tr>"
+    h = h & "<td style=""background:#F3F8EA;border-left:4px solid #8DB63C;padding:12px 16px;font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#222222;"">"
+    h = h & "<b>Geen interesse dit jaar?</b><br>"
+    h = h & "Laat het ons dan ook even weten via het formulier. Dat kost je maar een minuutje en "
+    h = h & "dan sturen we je verder geen herinneringen meer over deze actie."
+    h = h & "</td></tr></table>"
+
     ' Afgeronde knop met de persoonlijke formulierlink.
     ' Outlook (Windows) tekent afgeronde hoeken alleen via VML; andere
     ' mailprogramma's gebruiken de gewone link met border-radius.
