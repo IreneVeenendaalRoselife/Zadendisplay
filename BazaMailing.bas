@@ -19,7 +19,7 @@ Private Const ONDERWERP As String = "Intekenen BAZA zaden en displaydozen"
 Private Const PER_KEER As Long = 25
 Private Const LOG_BLAD As String = "Verzendlog"
 Private Const CONTACTPERSONEN_IN_CC As Boolean = True   ' False = alle adressen in Aan
-' Map met de afbeeldingen (Zadendisplay.jpg, Bloemenweide.jpg, Aardbeien.jpg, Tomaten.jpg).
+' Map met de afbeeldingen (Zadendisplay.jpg, Bloemenweide.jpg, AardbeienTuin.jpg, TomatenTuin.jpg).
 Private Const AFBEELDINGEN_MAP As String = "S:\Roselife\2027\Zadendisplays\Afbeeldingen displays dozen"
 ' -----------------------------------------------------------------------------
 
@@ -51,7 +51,7 @@ Public Sub BazaMailingKlaarzetten()
     cC4 = KolomIndex(lo, "Contactpersoon4")
 
     ' Afbeeldingen controleren
-    afb = Array("Zadendisplay.jpg", "Bloemenweide.jpg", "Aardbeien.jpg", "Tomaten.jpg")
+    afb = Array("Zadendisplay.jpg", "Bloemenweide.jpg", "AardbeienTuin.jpg", "TomatenTuin.jpg")
     map = ZoekAfbeeldingenMap(afb)
     If map = "" Then Exit Sub
 
