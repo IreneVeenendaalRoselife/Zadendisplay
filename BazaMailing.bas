@@ -161,8 +161,8 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "<table cellpadding=""0"" cellspacing=""0"" border=""0"" width=""680"" style=""margin:8px 0 4px 0;""><tr>"
     h = h & "<td style=""background:#F3F8EA;border-left:4px solid #8DB63C;padding:12px 16px;font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#222222;"">"
     h = h & "<b>Geen interesse dit jaar?</b><br>"
-    h = h & "Laat het ons dan ook even weten via het formulier. Dat kost je maar een minuutje en "
-    h = h & "dan sturen we je verder geen herinneringen meer over deze actie."
+    h = h & "Laat het ons dan ook weten via het formulier, "
+    h = h & "dan ontvang je over deze actie geen herinneringen meer."
     h = h & "</td></tr></table>"
 
     ' Afgeronde knop met de persoonlijke formulierlink.
