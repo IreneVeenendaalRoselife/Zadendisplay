@@ -204,7 +204,7 @@ End Function
 ' dan een webadres is), dan mag je zelf de map aanwijzen. Die keuze wordt in de
 ' werkmap onthouden.
 Private Function ZoekAfbeeldingenMap(ByVal afb As Variant) As String
-    Dim kandidaten As Collection, k As Variant, gekozen As String
+    Dim kandidaten As Collection, k As Variant, gekozen As String, mist As String
 
     Set kandidaten = New Collection
     If AFBEELDINGEN_MAP <> "" Then kandidaten.Add AFBEELDINGEN_MAP
@@ -215,40 +215,52 @@ Private Function ZoekAfbeeldingenMap(ByVal afb As Variant) As String
     End If
 
     For Each k In kandidaten
-        If AlleAfbeeldingen(MetScheiding(CStr(k)), afb) Then
+        If Ontbrekend(MetScheiding(CStr(k)), afb) = "" Then
             ZoekAfbeeldingenMap = MetScheiding(CStr(k))
             Exit Function
         End If
     Next k
 
-    MsgBox "De map met de afbeeldingen (" & Join(afb, ", ") & ") is niet automatisch gevonden." & vbCrLf & _
-           "Kies in het volgende venster de map waarin de afbeeldingen staan.", vbInformation
+    ' Niet gevonden: precies melden welke bestanden in de ingestelde map ontbreken
+    If AFBEELDINGEN_MAP <> "" Then
+        mist = Ontbrekend(MetScheiding(AFBEELDINGEN_MAP), afb)
+        MsgBox "In deze map ontbreken bestanden:" & vbCrLf & AFBEELDINGEN_MAP & vbCrLf & vbCrLf & _
+               "Ontbreekt:" & vbCrLf & mist & vbCrLf & vbCrLf & _
+               "Let op de exacte bestandsnaam en extensie (bijvoorbeeld .png of .jpg)." & vbCrLf & _
+               "Je kunt in het volgende venster ook een andere map kiezen.", vbExclamation
+    Else
+        MsgBox "De map met de afbeeldingen is niet automatisch gevonden." & vbCrLf & _
+               "Kies in het volgende venster de map waarin deze bestanden staan:" & vbCrLf & Join(afb, vbCrLf), vbInformation
+    End If
+
     Do
         With Application.FileDialog(4)   ' msoFileDialogFolderPicker
             .Title = "Kies de map met de BAZA-afbeeldingen"
             If .Show <> -1 Then Exit Function
             gekozen = MetScheiding(.SelectedItems(1))
         End With
-        If AlleAfbeeldingen(gekozen, afb) Then
+        mist = Ontbrekend(gekozen, afb)
+        If mist = "" Then
             OnthoudMap gekozen
             ZoekAfbeeldingenMap = gekozen
             Exit Function
         End If
-        If MsgBox("In deze map staan niet alle afbeeldingen:" & vbCrLf & Join(afb, vbCrLf) & vbCrLf & vbCrLf & _
+        If MsgBox("In deze map ontbreekt:" & vbCrLf & mist & vbCrLf & vbCrLf & _
                   "Een andere map kiezen?", vbExclamation + vbYesNo) = vbNo Then Exit Function
     Loop
 End Function
 
-Private Function AlleAfbeeldingen(ByVal map As String, ByVal afb As Variant) As Boolean
-    Dim i As Long, gevonden As String
+' Geeft de bestandsnamen terug die niet in de map staan (leeg = alles aanwezig)
+Private Function Ontbrekend(ByVal map As String, ByVal afb As Variant) As String
+    Dim i As Long, gevonden As String, r As String
     For i = LBound(afb) To UBound(afb)
         gevonden = ""
         On Error Resume Next
         gevonden = Dir(map & afb(i))
         On Error GoTo 0
-        If gevonden = "" Then Exit Function
+        If gevonden = "" Then r = r & IIf(r = "", "", vbCrLf) & "- " & afb(i)
     Next i
-    AlleAfbeeldingen = True
+    Ontbrekend = r
 End Function
 
 Private Function MetScheiding(ByVal map As String) As String
