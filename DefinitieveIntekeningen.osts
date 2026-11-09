@@ -1,0 +1,156 @@
+// Office Script: definitieve intekeningen uit het Forms-antwoordenblad.
+// Per winkel (gekoppeld via Winkelnummer of SAP Winkelnr) telt het laatste antwoord (hoogste Id).
+// Alleen winkels waarvan het laatste antwoord "Intekenen" is, komen in de tabel.
+// De tabel begint op rij 2; rij 1 blijft vrij (bijvoorbeeld voor een titel).
+function main(workbook: ExcelScript.Workbook): string {
+  const SOURCE_TABLE = "OfficeForms.Table";
+  const TARGET_SHEET = "Definitieve Intekeningen";
+  const TARGET_TABLE = "DefinitieveIntekeningen";
+  const START_ROW = 1; // 0 = rij 1, 1 = rij 2
+
+  const source = workbook.getTable(SOURCE_TABLE);
+  const headers = source.getHeaderRowRange().getTexts()[0];
+  const rows = source.getRangeBetweenHeaderAndTotal().getValues();
+
+  const col = (name: string): number => {
+    const index = headers.indexOf(name);
+    if (index < 0) {
+      throw new Error("Kolom niet gevonden: " + name);
+    }
+    return index;
+  };
+
+  const idCol = col("Id");
+  const winkelCol = col("Winkelnummer");
+  const sapCol = col("SAP Winkelnr");
+  const keuzeCol = col("Wel of Niet intekenen op de diverse zaden");
+
+  const normalize = (value: string | number | boolean): string =>
+    String(value ?? "").trim().toLowerCase();
+
+  const parent: number[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    parent.push(i);
+  }
+
+  function find(i: number): number {
+    if (parent[i] !== i) {
+      parent[i] = find(parent[i]);
+    }
+    return parent[i];
+  }
+
+  function union(a: number, b: number): void {
+    const rootA = find(a);
+    const rootB = find(b);
+
+    if (rootA !== rootB) {
+      parent[rootB] = rootA;
+    }
+  }
+
+  const seenWinkel = new Map<string, number>();
+  const seenSap = new Map<string, number>();
+
+  for (let i = 0; i < rows.length; i++) {
+    const winkel = normalize(rows[i][winkelCol]);
+    const sap = normalize(rows[i][sapCol]);
+
+    if (winkel !== "") {
+      if (seenWinkel.has(winkel)) {
+        union(i, seenWinkel.get(winkel)!);
+      } else {
+        seenWinkel.set(winkel, i);
+      }
+    }
+
+    if (sap !== "") {
+      if (seenSap.has(sap)) {
+        union(i, seenSap.get(sap)!);
+      } else {
+        seenSap.set(sap, i);
+      }
+    }
+  }
+
+  const latest = new Map<number, number>();
+
+  for (let i = 0; i < rows.length; i++) {
+    const root = find(i);
+    const previous = latest.get(root);
+
+    if (
+      previous === undefined ||
+      Number(rows[i][idCol]) > Number(rows[previous][idCol])
+    ) {
+      latest.set(root, i);
+    }
+  }
+
+  const result: (string | number | boolean)[][] = [];
+
+  latest.forEach((index) => {
+    if (normalize(rows[index][keuzeCol]) === "intekenen") {
+      result.push(rows[index]);
+    }
+  });
+
+  result.sort(
+    (a, b) => Number(a[idCol]) - Number(b[idCol])
+  );
+
+  let sheet = workbook.getWorksheet(TARGET_SHEET);
+
+  if (!sheet) {
+    sheet = workbook.addWorksheet(TARGET_SHEET);
+  }
+
+  // Bestaande uitvoertabel verwijderen zonder Array.find().
+  const tables = workbook.getTables();
+
+  for (let i = 0; i < tables.length; i++) {
+    if (tables[i].getName() === TARGET_TABLE) {
+      tables[i].delete();
+      break;
+    }
+  }
+
+  // Alleen vanaf de startrij leegmaken, zodat rij 1 blijft staan.
+  const used = sheet.getUsedRange();
+
+  if (used) {
+    const lastRow = used.getRowIndex() + used.getRowCount();
+    const lastCol = used.getColumnIndex() + used.getColumnCount();
+
+    if (lastRow > START_ROW) {
+      sheet
+        .getRangeByIndexes(START_ROW, 0, lastRow - START_ROW, lastCol)
+        .clear(ExcelScript.ClearApplyTo.all);
+    }
+  }
+
+  const output: (string | number | boolean)[][] = [
+    headers,
+    ...result
+  ];
+
+  const range = sheet.getRangeByIndexes(
+    START_ROW,
+    0,
+    output.length,
+    headers.length
+  );
+
+  range.setValues(output);
+
+  const table = sheet.addTable(range, true);
+  table.setName(TARGET_TABLE);
+  table.setPredefinedTableStyle("TableStyleMedium4");
+
+  // Kolombreedte op de tabel afstemmen (niet op een eventuele titel in rij 1).
+  range.getFormat().autofitColumns();
+
+  return result.length +
+    " definitieve intekeningen bijgewerkt.";
+}
