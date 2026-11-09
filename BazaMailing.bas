@@ -15,13 +15,10 @@ Option Explicit
 
 ' ---- Instellingen ------------------------------------------------------------
 Private Const AFZENDER As String = "plus@roselife.nl"
-' Onderwerp; daarachter komt per winkel " | Winkelnummer/SAPnr Winkelnaam"
-Private Const ONDERWERP As String = "2027 Intekenen Zaden (Displays & Mixdozen)"
+' Onderwerp: "<jaar> Intekenen Zaden (Displays & Mixdozen) | Winkelnummer/SAPnr Winkelnaam"
+' Het jaar en het soort mail (gewoon, correctie of reminder) vraagt de macro bij het starten.
+Private Const ONDERWERP As String = "Intekenen Zaden (Displays & Mixdozen)"
 Private Const PER_KEER As Long = 25
-' Correctiemail: True = de eerste mail is al verstuurd en deze mail vervangt hem
-' (extra inleiding en "Correctie: " voor het onderwerp). Gebruikt een eigen log.
-Private Const CORRECTIE As Boolean = True
-Private Const LOG_BLAD As String = "Verzendlog correctie"   ' eerste ronde: "Verzendlog"
 Private Const CONTACTPERSONEN_IN_CC As Boolean = True   ' False = alle adressen in Aan
 ' Map met de afbeeldingen (Zadendisplay.jpg, Bloemenweide.jpg, AardbeienTuin.jpg, TomatenTuin.jpg)
 ' en de knop (KnopFormulier.png).
@@ -31,6 +28,10 @@ Private Const AFBEELDINGEN_MAP As String = "S:\Roselife\2027\Zadendisplays\Afbee
 Private Const PR_ATTACH_CONTENT_ID As String = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
 Private Const PR_ATTACHMENT_HIDDEN As String = "http://schemas.microsoft.com/mapi/proptag/0x7FFE000B"
 
+' Keuzes van deze run (worden bij het starten gevraagd)
+Private mJaar As Long          ' bijvoorbeeld 2027
+Private mSoort As String       ' "", "Correctie" of "Reminder"
+
 Public Sub BazaMailingKlaarzetten()
     Dim lo As Object, ol As Object, account As Object
     Dim logWs As Worksheet, gehad As Object
@@ -39,6 +40,9 @@ Public Sub BazaMailingKlaarzetten()
     Dim rij As Range, wnk As String, mailAdres As String
     Dim teDoen As Collection, item As Variant
     Dim aantal As Long, totaal As Long, mail As Object
+
+    ' Jaar en soort mail vragen
+    If Not VraagInstellingen() Then Exit Sub
 
     ' Tabel met het winkeloverzicht zoeken (herkenbaar aan de kolom Formulierlink)
     Set lo = ZoekTabel()
@@ -80,10 +84,13 @@ Public Sub BazaMailingKlaarzetten()
     totaal = teDoen.Count
     If totaal = 0 Then
         MsgBox "Er zijn geen winkels meer om klaar te zetten." & vbCrLf & _
-               "(Alle winkels staan al in het tabblad " & LOG_BLAD & ".)", vbInformation
+               "(Alle winkels staan al in het tabblad " & LogNaam() & ".)", vbInformation
         Exit Sub
     End If
-    If MsgBox(totaal & " winkels nog te mailen." & vbCrLf & vbCrLf & _
+    If MsgBox("Jaar: " & mJaar & vbCrLf & _
+              "Soort mail: " & IIf(mSoort = "", "Gewone mail", mSoort) & vbCrLf & _
+              "Log: tabblad " & LogNaam() & vbCrLf & vbCrLf & _
+              totaal & " winkels nog te mailen." & vbCrLf & vbCrLf & _
               "De eerste " & Application.Min(PER_KEER, totaal) & " mails klaarzetten in Outlook?", _
               vbQuestion + vbYesNo) = vbNo Then Exit Sub
 
@@ -154,10 +161,15 @@ Private Function MailTekst(ByVal link As String) As String
 
     h = "<html><body style=""font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#222222;"">"
     h = h & "<p>Goedendag,</p>"
-    If CORRECTIE Then
+    If mSoort = "Correctie" Then
         h = h & "<p>Onlangs heb je van ons een mail ontvangen over het intekenen op het BAZA-assortiment. "
         h = h & "Helaas werkte de knop naar het formulier in die mail niet. Onze excuses daarvoor. "
         h = h & "Hieronder vind je de informatie opnieuw, nu met een werkende link.</p>"
+    ElseIf mSoort = "Reminder" Then
+        h = h & "<p>Onlangs heb je van ons een mail ontvangen over het intekenen op het BAZA-assortiment. "
+        h = h & "Wij hebben je reactie nog niet ontvangen. Wil je het formulier alsnog invullen? "
+        h = h & "Ook als je dit jaar niet wilt intekenen, horen we dat graag.</p>"
+        h = h & "<p>Heb je het formulier inmiddels al ingevuld? Dan kun je deze mail als niet verzonden beschouwen.</p>"
     End If
     h = h & "<p>Ook dit jaar is het weer mogelijk om in te tekenen op het assortiment van BAZA!<br>"
     h = h & "Naast de vertrouwde jaarlijkse zadendisplay kun je dit jaar ook kiezen voor diverse andere displaydozen.</p>"
@@ -168,7 +180,7 @@ Private Function MailTekst(ByVal link As String) As String
     h = h & "<p>Voordat je gaat intekenen, is het belangrijk om rekening te houden met de volgende informatie:</p><ul>"
     h = h & "<li>Alle displays worden kant-en-klaar geleverd.</li>"
     h = h & "<li>Besteladvies: minimaal 1 zadendisplay (850 zakjes).</li>"
-    h = h & "<li>Voor de zadendisplay geldt 100% recht van retour. Overgebleven zaden kunnen in week 22 van 2027 per post worden geretourneerd. Verdere instructies hierover volgen op een later moment.</li>"
+    h = h & "<li>Voor de zadendisplay geldt 100% recht van retour. Overgebleven zaden kunnen in week 22 van " & mJaar & " per post worden geretourneerd. Verdere instructies hierover volgen op een later moment.</li>"
     h = h & "</ul>"
 
     ' Oproep om ook bij geen interesse het formulier in te vullen
@@ -344,8 +356,45 @@ Private Function AanbodTabel() As String
     AanbodTabel = t
 End Function
 
+' Vraagt het jaar (standaard volgend jaar) en het soort mail.
+Private Function VraagInstellingen() As Boolean
+    Dim antw As String
+
+    antw = InputBox("Voor welk jaar is deze mailing?", "BAZA mailing: jaar", CStr(Year(Date) + 1))
+    If StrPtr(antw) = 0 Then Exit Function          ' Annuleren
+    antw = Trim$(antw)
+    If Not IsNumeric(antw) Or Len(antw) <> 4 Then
+        MsgBox "Vul een jaartal in, bijvoorbeeld " & (Year(Date) + 1) & ".", vbExclamation
+        Exit Function
+    End If
+    mJaar = CLng(antw)
+
+    antw = InputBox("Welk soort mail?" & vbCrLf & vbCrLf & _
+                    "1 = Gewone mail (niets voor het onderwerp)" & vbCrLf & _
+                    "2 = Correctie" & vbCrLf & _
+                    "3 = Reminder", "BAZA mailing: soort mail", "1")
+    If StrPtr(antw) = 0 Then Exit Function
+    Select Case Trim$(antw)
+        Case "1", "": mSoort = ""
+        Case "2": mSoort = "Correctie"
+        Case "3": mSoort = "Reminder"
+        Case Else
+            MsgBox "Kies 1, 2 of 3.", vbExclamation
+            Exit Function
+    End Select
+
+    VraagInstellingen = True
+End Function
+
+' Elk jaar en elk soort mail heeft een eigen log, bijvoorbeeld
+' "Verzendlog 2027" of "Verzendlog 2027 Reminder".
+Private Function LogNaam() As String
+    LogNaam = "Verzendlog " & mJaar & IIf(mSoort = "", "", " " & mSoort)
+End Function
+
 ' Onderwerp met winkelgegevens, bijvoorbeeld:
 ' "2027 Intekenen Zaden (Displays & Mixdozen) | 1234/6123 PLUS Jansen"
+' Bij een correctie of reminder komt "Correctie: " of "Reminder: " ervoor.
 ' Het SAPnr komt er alleen bij als het bekend is. Staat het SAPnr al tussen
 ' haakjes in de winkelnaam, dan wordt het daar weggehaald zodat het niet dubbel staat.
 Private Function Onderwerpregel(ByVal wnk As Variant, ByVal naam As Variant, ByVal sap As Variant) As String
@@ -358,7 +407,7 @@ Private Function Onderwerpregel(ByVal wnk As Variant, ByVal naam As Variant, ByV
     End If
     deel = Trim$(CStr(wnk))
     If s <> "" Then deel = deel & "/" & s
-    Onderwerpregel = IIf(CORRECTIE, "Correctie: ", "") & ONDERWERP & " | " & Trim$(deel & " " & n)
+    Onderwerpregel = IIf(mSoort = "", "", mSoort & ": ") & mJaar & " " & ONDERWERP & " | " & Trim$(deel & " " & n)
 End Function
 
 ' Contactpersoon 2 t/m 4 als ;-gescheiden lijst
@@ -394,11 +443,11 @@ End Function
 
 Private Function LogBlad() As Worksheet
     On Error Resume Next
-    Set LogBlad = ThisWorkbook.Worksheets(LOG_BLAD)
+    Set LogBlad = ThisWorkbook.Worksheets(LogNaam())
     On Error GoTo 0
     If LogBlad Is Nothing Then
         Set LogBlad = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
-        LogBlad.Name = LOG_BLAD
+        LogBlad.Name = LogNaam()
         LogBlad.Range("A1:E1").Value = Array("Winkelnummer", "Winkelnaam", "Aan", "CC", "Klaargezet op")
         LogBlad.Range("A1:E1").Font.Bold = True
     End If
