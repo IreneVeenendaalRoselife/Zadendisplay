@@ -281,15 +281,17 @@ Private Sub OnthoudMap(ByVal map As String)
     ThisWorkbook.Names.Add Name:="BazaAfbeeldingenMap", RefersTo:="=""" & map & """", Visible:=False
 End Sub
 
-' Vier displays naast elkaar. Per kolom: omschrijving, foto, uitleverweek, inhoud en recht van retour.
+' Vier displays naast elkaar. Per kolom: omschrijving, foto, uitleverweek, inhoud, consumentenprijs en recht van retour.
 ' De nummers 1 t/m 4 verwijzen naar de afbeeldingen in de volgorde van afb.
 Private Function AanbodTabel() As String
-    Dim namen As Variant, weken As Variant, inhoud As Variant, retour As Variant
+    Dim namen As Variant, weken As Variant, inhoud As Variant, prijs As Variant, retour As Variant
     Dim t As String, i As Long, cel As String
 
     namen = Array("Zadendisplay", "Bloemenweide mix doos", "Hangtuin Aardbeien mix Displaydoos", "Keuken Tuin Tomaten Displaydoos")
     weken = Array("Week 3", "Week 3", "Week 12", "Week 12")
     inhoud = Array("850 zakjes", "30 CE", "30 CE", "30 CE")
+    ' Consumentenprijs per stuk (&euro; = euroteken in de mail)
+    prijs = Array("&euro; 1,79", "&euro; 6,99", "&euro; 6,99", "&euro; 6,99")
     retour = Array(True, False, False, False)
     cel = "align=""center"" width=""25%"" style=""padding:8px 10px;font-family:Calibri,Arial,sans-serif;font-size:11pt;border-left:1px solid #DDDDDD;border-right:1px solid #DDDDDD;"
 
@@ -321,6 +323,13 @@ Private Function AanbodTabel() As String
     t = t & "<tr>"
     For i = 0 To 3
         t = t & "<td " & cel & "border-top:1px solid #DDDDDD;"">Inhoud:<br><b>" & inhoud(i) & "</b></td>"
+    Next i
+    t = t & "</tr>"
+
+    ' Consumentenprijs per stuk
+    t = t & "<tr>"
+    For i = 0 To 3
+        t = t & "<td " & cel & "border-top:1px solid #DDDDDD;"">Consumentenprijs:<br><b>" & prijs(i) & "</b> per stuk</td>"
     Next i
     t = t & "</tr>"
 
