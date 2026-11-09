@@ -1,12 +1,21 @@
 // Office Script: definitieve intekeningen uit het Forms-antwoordenblad.
 // Per winkel (gekoppeld via Winkelnummer of SAP Winkelnr) telt het laatste antwoord (hoogste Id).
 // Alleen winkels waarvan het laatste antwoord "Intekenen" is, komen in de tabel.
-// De tabel begint op rij 2; rij 1 blijft vrij (bijvoorbeeld voor een titel).
+// De tabel begint op rij 2. In rij 1 komt boven de aantal-kolommen het totaal
+// (SUBTOTAAL, dus bij filteren telt het alleen de zichtbare regels).
 function main(workbook: ExcelScript.Workbook): string {
   const SOURCE_TABLE = "OfficeForms.Table";
   const TARGET_SHEET = "Definitieve Intekeningen";
   const TARGET_TABLE = "DefinitieveIntekeningen";
   const START_ROW = 1; // 0 = rij 1, 1 = rij 2
+  // Kolommen waarvan bovenaan het totaal komt. Exacte kolomnaam, of een deel
+  // ervan (bijvoorbeeld als de vraag in Forms langer is).
+  const TOTAAL_KOLOMMEN = [
+    "Zadendisplay",
+    "Bloemenweide",
+    "Aardbeien Hangtuin",
+    "Tomaten Keukentuin"
+  ];
 
   const source = workbook.getTable(SOURCE_TABLE);
   const headers = source.getHeaderRowRange().getTexts()[0];
@@ -18,6 +27,21 @@ function main(workbook: ExcelScript.Workbook): string {
       throw new Error("Kolom niet gevonden: " + name);
     }
     return index;
+  };
+
+  // Kolom zoeken op exacte naam, anders op een deel van de naam
+  const zoekKolom = (name: string): number => {
+    const exact = headers.indexOf(name);
+    if (exact >= 0) {
+      return exact;
+    }
+    const lower = name.toLowerCase();
+    for (let i = 0; i < headers.length; i++) {
+      if (headers[i].toLowerCase().indexOf(lower) >= 0) {
+        return i;
+      }
+    }
+    return -1;
   };
 
   const idCol = col("Id");
@@ -96,6 +120,29 @@ function main(workbook: ExcelScript.Workbook): string {
     }
   });
 
+  // Aantallen als getal opslaan, zodat ze opgeteld kunnen worden
+  const totaalCols: number[] = [];
+  const nietGevonden: string[] = [];
+
+  for (let t = 0; t < TOTAAL_KOLOMMEN.length; t++) {
+    const c = zoekKolom(TOTAAL_KOLOMMEN[t]);
+    if (c >= 0) {
+      totaalCols.push(c);
+    } else {
+      nietGevonden.push(TOTAAL_KOLOMMEN[t]);
+    }
+  }
+
+  for (let r = 0; r < result.length; r++) {
+    for (let t = 0; t < totaalCols.length; t++) {
+      const c = totaalCols[t];
+      const tekst = String(result[r][c] ?? "").trim().replace(",", ".");
+      if (tekst !== "" && !isNaN(Number(tekst))) {
+        result[r][c] = Number(tekst);
+      }
+    }
+  }
+
   result.sort(
     (a, b) => Number(a[idCol]) - Number(b[idCol])
   );
@@ -116,18 +163,11 @@ function main(workbook: ExcelScript.Workbook): string {
     }
   }
 
-  // Alleen vanaf de startrij leegmaken, zodat rij 1 blijft staan.
+  // Blad leegmaken; de totalen in rij 1 worden hieronder opnieuw gezet.
   const used = sheet.getUsedRange();
 
   if (used) {
-    const lastRow = used.getRowIndex() + used.getRowCount();
-    const lastCol = used.getColumnIndex() + used.getColumnCount();
-
-    if (lastRow > START_ROW) {
-      sheet
-        .getRangeByIndexes(START_ROW, 0, lastRow - START_ROW, lastCol)
-        .clear(ExcelScript.ClearApplyTo.all);
-    }
+    used.clear(ExcelScript.ClearApplyTo.all);
   }
 
   const output: (string | number | boolean)[][] = [
@@ -148,9 +188,39 @@ function main(workbook: ExcelScript.Workbook): string {
   table.setName(TARGET_TABLE);
   table.setPredefinedTableStyle("TableStyleMedium4");
 
-  // Kolombreedte op de tabel afstemmen (niet op een eventuele titel in rij 1).
+  // Totalen boven de tabel (rij boven de kolomkoppen)
+  if (START_ROW > 0 && totaalCols.length > 0) {
+    const totaalRij = START_ROW - 1;
+
+    // Label "Totaal" links van de eerste totaalkolom (of in kolom A)
+    let eerste = totaalCols[0];
+    for (let t = 1; t < totaalCols.length; t++) {
+      eerste = Math.min(eerste, totaalCols[t]);
+    }
+    const labelCel = sheet.getRangeByIndexes(totaalRij, Math.max(eerste - 1, 0), 1, 1);
+    if (eerste > 0) {
+      labelCel.setValue("Totaal");
+      labelCel.getFormat().setHorizontalAlignment(ExcelScript.HorizontalAlignment.right);
+      labelCel.getFormat().getFont().setBold(true);
+    }
+
+    for (let t = 0; t < totaalCols.length; t++) {
+      // In een tabelverwijzing moeten ' [ ] en # voorafgegaan worden door '
+      const kolomNaam = headers[totaalCols[t]].replace(/(['\[\]#])/g, "'$1");
+      const cel = sheet.getRangeByIndexes(totaalRij, totaalCols[t], 1, 1);
+      cel.setFormula("=SUBTOTAL(109," + TARGET_TABLE + "[" + kolomNaam + "])");
+      cel.getFormat().getFont().setBold(true);
+      cel.getFormat().getFill().setColor("#DDEBF7");
+      cel.getFormat().setHorizontalAlignment(ExcelScript.HorizontalAlignment.center);
+    }
+  }
+
+  // Kolombreedte op de tabel afstemmen
   range.getFormat().autofitColumns();
 
-  return result.length +
-    " definitieve intekeningen bijgewerkt.";
+  let melding = result.length + " definitieve intekeningen bijgewerkt.";
+  if (nietGevonden.length > 0) {
+    melding += " Kolom niet gevonden voor totaal: " + nietGevonden.join(", ") + ".";
+  }
+  return melding;
 }
