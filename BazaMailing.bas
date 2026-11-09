@@ -57,7 +57,7 @@ Public Sub BazaMailingKlaarzetten()
     cLink = lo.ListColumns("Formulierlink").Index
     cSap = KolomIndex(lo, "SAPnr")
 
-    ' Reminder: alleen winkels zonder reactie (kolom Reactie bevat "(0 x ingevuld)")
+    ' Reminder: alleen winkels zonder reactie (kolom Reactie is leeg)
     Dim cReactie As Long, overgeslagen As Long
     cReactie = KolomIndex(lo, "Reactie")
     If mSoort = "Reminder" And cReactie = 0 Then
@@ -409,13 +409,11 @@ Private Function VraagInstellingen() As Boolean
     VraagInstellingen = True
 End Function
 
-' True als de kolom Reactie aangeeft dat de winkel nog niet heeft gereageerd,
-' bijvoorbeeld " (0 x ingevuld) ". Spaties en hoofdletters tellen niet mee.
+' True als de winkel nog niet heeft gereageerd: de kolom Reactie is leeg
+' (spaties tellen niet mee).
 Private Function GeenReactie(ByVal waarde As Variant) As Boolean
-    Dim t As String
     If IsError(waarde) Then Exit Function
-    t = LCase$(Replace(Replace(CStr(waarde), " ", ""), Chr$(160), ""))
-    GeenReactie = (InStr(t, "(0xingevuld)") > 0)
+    GeenReactie = (Trim$(Replace(CStr(waarde), Chr$(160), " ")) = "")
 End Function
 
 ' Elk jaar en elk soort mail heeft een eigen log, bijvoorbeeld
