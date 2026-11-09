@@ -8,6 +8,7 @@ function main(workbook: ExcelScript.Workbook): string {
   const TARGET_SHEET = "Definitieve Intekeningen";
   const TARGET_TABLE = "DefinitieveIntekeningen";
   const START_ROW = 1; // 0 = rij 1, 1 = rij 2
+  const GROEP_KOLOMMEN: string = "B:E"; // deze kolommen worden gegroepeerd en dichtgeklapt ("" = niet)
   // Kolommen waarvan bovenaan het totaal komt. Exacte kolomnaam, of een deel
   // ervan (bijvoorbeeld als de vraag in Forms langer is).
   const TOTAAL_KOLOMMEN = [
@@ -217,6 +218,20 @@ function main(workbook: ExcelScript.Workbook): string {
 
   // Kolombreedte op de tabel afstemmen
   range.getFormat().autofitColumns();
+
+  // Kolommen groeperen en dichtklappen (na het aanpassen van de breedte,
+  // anders worden ze weer zichtbaar). Eerst een oude groepering opheffen,
+  // zodat er geen dubbele niveaus ontstaan.
+  if (GROEP_KOLOMMEN !== "") {
+    const groep = sheet.getRange(GROEP_KOLOMMEN);
+    try {
+      groep.ungroup(ExcelScript.GroupOption.byColumns);
+    } catch (e) {
+      // Was nog niet gegroepeerd
+    }
+    groep.group(ExcelScript.GroupOption.byColumns);
+    groep.hideGroupDetails(ExcelScript.GroupOption.byColumns);
+  }
 
   let melding = result.length + " definitieve intekeningen bijgewerkt.";
   if (nietGevonden.length > 0) {
