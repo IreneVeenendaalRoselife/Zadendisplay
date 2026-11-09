@@ -56,6 +56,15 @@ Public Sub BazaMailingKlaarzetten()
     cMail = lo.ListColumns("Emailadres").Index
     cLink = lo.ListColumns("Formulierlink").Index
     cSap = KolomIndex(lo, "SAPnr")
+
+    ' Reminder: alleen winkels zonder reactie (kolom Reactie bevat "(0 x ingevuld)")
+    Dim cReactie As Long, overgeslagen As Long
+    cReactie = KolomIndex(lo, "Reactie")
+    If mSoort = "Reminder" And cReactie = 0 Then
+        MsgBox "Voor een reminder is de kolom Reactie nodig, maar die staat niet in de tabel " & _
+               lo.Name & " (tabblad " & lo.Parent.Name & ").", vbExclamation
+        Exit Sub
+    End If
     cC2 = KolomIndex(lo, "Contactpersoon2")
     cC3 = KolomIndex(lo, "Contactpersoon3")
     cC4 = KolomIndex(lo, "Contactpersoon4")
@@ -77,19 +86,33 @@ Public Sub BazaMailingKlaarzetten()
         For Each rij In lo.DataBodyRange.Rows
             wnk = CStr(rij.Cells(1, cWnk).Value)
             mailAdres = Trim$(CStr(rij.Cells(1, cMail).Value))
-            If wnk <> "" And mailAdres <> "" And Not gehad.Exists(wnk) Then teDoen.Add rij
+            If wnk <> "" And mailAdres <> "" And Not gehad.Exists(wnk) Then
+                ' (VBA kijkt bij And altijd naar beide kanten, daarom twee aparte If's)
+                Dim meenemen As Boolean
+                meenemen = True
+                If mSoort = "Reminder" Then
+                    If Not GeenReactie(rij.Cells(1, cReactie).Value) Then meenemen = False
+                End If
+                If meenemen Then
+                    teDoen.Add rij
+                Else
+                    overgeslagen = overgeslagen + 1
+                End If
+            End If
         Next rij
     End If
 
     totaal = teDoen.Count
     If totaal = 0 Then
         MsgBox "Er zijn geen winkels meer om klaar te zetten." & vbCrLf & _
-               "(Alle winkels staan al in het tabblad " & LogNaam() & ".)", vbInformation
+               "(Alle winkels staan al in het tabblad " & LogNaam() & _
+               IIf(mSoort = "Reminder", " of hebben al gereageerd", "") & ".)", vbInformation
         Exit Sub
     End If
     If MsgBox("Jaar: " & mJaar & vbCrLf & _
               "Soort mail: " & IIf(mSoort = "", "Gewone mail", mSoort) & vbCrLf & _
               "Log: tabblad " & LogNaam() & vbCrLf & vbCrLf & _
+              IIf(mSoort = "Reminder", overgeslagen & " winkels overgeslagen omdat ze al gereageerd hebben." & vbCrLf, "") & _
               totaal & " winkels nog te mailen." & vbCrLf & vbCrLf & _
               "De eerste " & Application.Min(PER_KEER, totaal) & " mails klaarzetten in Outlook?", _
               vbQuestion + vbYesNo) = vbNo Then Exit Sub
@@ -386,6 +409,15 @@ Private Function VraagInstellingen() As Boolean
     VraagInstellingen = True
 End Function
 
+' True als de kolom Reactie aangeeft dat de winkel nog niet heeft gereageerd,
+' bijvoorbeeld " (0 x ingevuld) ". Spaties en hoofdletters tellen niet mee.
+Private Function GeenReactie(ByVal waarde As Variant) As Boolean
+    Dim t As String
+    If IsError(waarde) Then Exit Function
+    t = LCase$(Replace(Replace(CStr(waarde), " ", ""), Chr$(160), ""))
+    GeenReactie = (InStr(t, "(0xingevuld)") > 0)
+End Function
+
 ' Elk jaar en elk soort mail heeft een eigen log, bijvoorbeeld
 ' "Verzendlog 2027" of "Verzendlog 2027 Reminder".
 Private Function LogNaam() As String
@@ -424,6 +456,17 @@ End Function
 
 Private Function ZoekTabel() As Object
     Dim ws As Worksheet, lo As ListObject
+    ' Voorkeur voor de tabel "Winkels"
+    On Error Resume Next
+    Set lo = ThisWorkbook.Worksheets("Winkels").ListObjects("Winkels")
+    On Error GoTo 0
+    If Not lo Is Nothing Then
+        If KolomIndex(lo, "Formulierlink") > 0 And KolomIndex(lo, "Emailadres") > 0 _
+           And KolomIndex(lo, "Winkelnummer") > 0 Then
+            Set ZoekTabel = lo
+            Exit Function
+        End If
+    End If
     For Each ws In ThisWorkbook.Worksheets
         For Each lo In ws.ListObjects
             If KolomIndex(lo, "Formulierlink") > 0 And KolomIndex(lo, "Emailadres") > 0 _
