@@ -326,7 +326,7 @@ Private Function AanbodTabel() As String
     weken = Array("Week 3", "Week 3", "Week 12", "Week 12")
     inhoud = Array("850 zakjes", "30 CE", "30 CE", "30 CE")
     ' Consumentenprijs per stuk (&euro; = euroteken in de mail)
-    prijs = Array("&euro; 1,79", "&euro; 6,99", "&euro; 6,99", "&euro; 6,99")
+    prijs = Array("&euro; 1,79", "&euro; 6,99", "&euro; 6,49", "&euro; 6,49")
     retour = Array(True, False, False, False)
     cel = "align=""center"" width=""25%"" style=""padding:8px 10px;font-family:Calibri,Arial,sans-serif;font-size:11pt;border-left:1px solid #DDDDDD;border-right:1px solid #DDDDDD;"
 
